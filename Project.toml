@@ -1,0 +1,7 @@
+name = "Brunnermeier_Sannikov_Replication"
+uuid = "bd15fdb5-2fd5-4959-984a-2e3d129fd4fe"
+authors = ["Tancrède Polge <tancrede.polge@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+DocumenterTools = "35a29f4d-8980-5a13-9543-d66fff28ecb8"
