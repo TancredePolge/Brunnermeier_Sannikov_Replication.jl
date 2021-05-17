@@ -1,5 +1,6 @@
 ##        REPLICATION CODE FOR BRUNNERMEIER & SANNIKOV (2014)
 
+using(DifferentialEquations)
 
         ## Setting up functions
 
@@ -22,13 +23,14 @@ end
 # Fabio: Following chunk doesn't work. probably because F isn't defined anywhere...
 # Fabio: In my opinion capital F is the derivative of f. but then it's the same thing as fp?
 # Fabio: Anyway F is for sure a 4x1 vector just like f or fp is
-function eventfcn(eta, F)
-    global qmax # not sure
-    value = [(qmax - F[3]), F[2], F[4]]
-    isterminal = [1, 1, 1]
-    direction = [0, 0, 0]
-    return (value, isterminal, direction)
-end
+
+#function eventfcn(eta, F)
+#    global qmax # not sure
+#    value = [(qmax - F[3]), F[2], F[4]]
+#    isterminal = [1, 1, 1]
+#    direction = [0, 0, 0]
+#    return (value, isterminal, direction)
+#end
 
 
 
@@ -119,6 +121,7 @@ for iter = 1:50
 end
 
 # Determine the worst q, q_ = q(0) that is the price of capital when experts own no capital 
+global q_
 QL = 0 
 QR = 10 
 
@@ -147,4 +150,40 @@ F0 = [1, -1e+10, q_, 0]  # [theta(0), theta'(0), q(0), q'(0)]
 
 #options = odeset('RelTol',1e-08,'AbsTol',1e-10, 'events','evntfcn');
 
+# Defining stopping function
 
+function eventfcn(vcondition, value, eta, integrator)
+    out[1] = (qmax-F(3))    # Potential problem with qmax 
+    out[2] = F(2)
+    out[3] = F(4)
+end
+
+function affect!(integrator, idx)
+    if (idx == 1 | idx == 2 | idx == 3)
+        affect!(integrator) = terminate!(integrator)
+    end
+end
+
+cb = VectorContinuousCallback(eventfcn,affect!,3)    
+
+odefun = fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)[1]
+dyn = fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)[2]
+
+QL = 0
+QR = 1e+15
+for iter = 1:50
+    F0[4] = (QL+QR)/2
+
+    prob = ODEProblem(odefun, F0, etaspan, dyn)
+    sol = solve(prob, Tsit5(), callback = cb, RelTol = 1e-08, abstol = 1e-10)
+end
+
+    
+
+
+#  u0 = [50.0,0.0,0.0,2.0]
+#  tspan = (0.0,15.0)
+#  p = 9.8
+#  prob = ODEProblem(f,u0,tspan,p)
+#  sol = solve(prob,Tsit5(),callback=cb,dt=1e-3,adaptive=false)
+#  plot(sol,vars=(1,3))
