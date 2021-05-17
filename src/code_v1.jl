@@ -166,14 +166,13 @@ end
 
 cb = VectorContinuousCallback(eventfcn,affect!,3)    
 
-odefun = fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)[1]
-dyn = fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)[2]
+odefun(eta, f) = fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)[1]
+#dyn(eta, f) = fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)[2]
 
 QL = 0
 QR = 1e+15
 for iter = 1:50
     F0[4] = (QL+QR)/2
-
     prob = ODEProblem(odefun, F0, etaspan, dyn)
     sol = solve(prob, Tsit5(), callback = cb, RelTol = 1e-08, abstol = 1e-10)
 end
