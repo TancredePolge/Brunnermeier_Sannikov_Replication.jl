@@ -66,9 +66,9 @@ function fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)
     rk = r + risk_premium
     r_k = r + household_premium
 
-    dyn = [psi, sigma_eta_eta, sigma_q, mu_eta_eta, mu_q, iota, leverage, rk, r_k]
+    global dyn = [psi, sigma_eta_eta, sigma_q, mu_eta_eta, mu_q, iota, leverage, rk, r_k]
 
-    return(fp)
+    return(fp, dyn)
 
 end
 
@@ -150,18 +150,18 @@ end
 cb = ContinuousCallback(condition, affect!)
 
 # u p t
-odefun(f, dyn, eta) = fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)
-#dyn(f, dyn, eta) = fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)[2]
+odefun(f, dyn, eta) = fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)[1]
+parameters(f, dyn, eta) = fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)[2]
 
-sols = []
+#sols = []
 #time = zeros(1)
 global QL = 0
 global QR = 1e+15
 for iter = 1:50
     F0[4] = (QL + QR)/2
-    prob = ODEProblem(odefun, F0, etaspan, dyn)
-    sol = solve(prob, Tsit5(), RelTol = 1e-08, abstol = 1e-10)  # sol = solve(prob, Tsit5(), callback = cb, RelTol = 1e-08, abstol = 1e-10)
-    push!(sols, sol)
+    prob = ODEProblem(odefun, F0, etaspan, parameters)
+    global sol = solve(prob, Tsit5(), RelTol = 1e-08, abstol = 1e-10)  # sol = solve(prob, Tsit5(), callback = cb, RelTol = 1e-08, abstol = 1e-10)
+    #push!(sols, sol)
     #global t = sol.u
     #push!(time,t)
     if sol.u[end][4] == 0 # if q'(eta) has reached zero, we
@@ -171,40 +171,50 @@ for iter = 1:50
     end
 end
 
+#    if IE == 3, % if q'(eta) has reached zero, we
+#        QL = F0(4);  % increase q'(0)
+#    else        % if q(eta) reached qmax or theta'(0) reached 0
+#        QR = F0(4);  % we reduce q'(0)
+#    end
+
 using Plots
 #plot(sols[1])
 #plot!(sols[2])
-plot(sols[end])
-xlabel!("η")
+plot(sol, xaxis = "η")
+#plot(sols[end], xaxis = "η")
+
 
 ## Computing other variables
 
-#N = length(sols[end].t)
-#dynout = zeros(N, 9)
+#N = length(sols)
+N = length(sol.t)
+dynout = zeros(N, 9)
 
-#for n = 1:N
-#    fp = fnct(sols[end].t, sols[end].u, r, rho, a, a_, delta, delta_, sigma)
-#end
-
-#=
-
-% here we are basically done... let me just compute all other variables
-% from the same function fnct
-N = length(etaout);
-dynout = zeros(N, 9);
-for n = 1:N,
-    [fp dynout(n,:)] = fnct(etaout(n), fout(n,:), r, rho, a, a_, delta, delta_, sigma);
+for n = 1:N
+    fp = fnct(sol.t[n], sol.u[n], r, rho, a, a_, delta, delta_, sigma)[1]
+    dynout[n,:] = fnct(sol.t[n], sol.u[n], r, rho, a, a_, delta, delta_, sigma)[2]
 end
 
-% normalize theta, to make sure that theta(eta*) = 1
-normalization = fout(N,1);
-fout(:,1:2) = fout(:,1:2)/normalization;
+# We normalize the graphs
+fout = hcat(sol.u...)'
+normalization = fout[N, 1]
+fout[:,1] = fout[:,1]./normalization
+fout[:,2] = fout[:,2]./normalization
 
-% plot everything
+# Figure 1
+p1 = plot(sol.t, fout[:,3], xaxis = "η", yaxis = "q")
+p2 = plot(sol.t, fout[:,1], xaxis = "η", yaxis = "theta")
+p3 = plot(sol.t[1:N-1], dynout[1:N-1,1], xaxis = "η", yaxis = "psi")
+p4 = plot(sol.t[1:N-1], dynout[1:N-1,4], xaxis = "η", yaxis = "η mu^η")
+p5 = plot(sol.t[1:N-1], dynout[1:N-1,2], xaxis = "η", yaxis = "η sigma^η")
+p6 = plot(sol.t[1:N-1], dynout[1:N-1,3], xaxis = "η", yaxis = "sigma^q")
+p7 = plot(sol.t[1:N-1], dynout[1:N-1,6], xaxis = "η", yaxis = "iota")
+p8 = plot(sol.t[1:N-1], dynout[1:N-1,7], xaxis = "η", yaxis = "expert leverage")
+p9 = plot(sol.t[1:N-1], dynout[1:N-1,8], xaxis = "η", yaxis = "returns")
+p10 = plot!(p9, sol.t[1:N-1], dynout[1:N-1,9])
+plot(p1, p2, p3, p4, p5, p6, p7, p8, p10, layout = (3, 3), legend = false)
 
-figure(1);
-subplot(3,3,1); hold on
-plot(etaout, fout(:,3), color);
-xlabel('\eta')
-ylabel('q');
-=#
+# Figure 2
+expert = sol.t.*fout[:,3].*fout[:,1]
+household = (1 .- sol.t).*fout[:,3]
+plot(expert,household, xaxis = "expert utility", yaxis = "household utility")
