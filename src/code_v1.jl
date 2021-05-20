@@ -6,7 +6,7 @@ using(DifferentialEquations)
 
 ## Define the investment function
 
-# Fabio: Complete Replication of investment.m except minor details: 
+# Fabio: Complete Replication of investment.m except minor details:
 # Fabio: not sure if theta, Phi and iota need to be defined inside or outside function
 # Fabio: not sure if we have to return(Phi_ioto_temp), but let's keep it for now
 
@@ -16,63 +16,51 @@ function investment(q)
     iota = Phi + (theta*Phi^2)/2
     Phi_iota_temp = [Phi, iota]
     return(Phi_iota_temp)
-end 
-
-## Define the event function 
-
-# Fabio: Following chunk doesn't work. probably because F isn't defined anywhere...
-# Fabio: In my opinion capital F is the derivative of f. but then it's the same thing as fp?
-# Fabio: Anyway F is for sure a 4x1 vector just like f or fp is
-
-#function eventfcn(eta, F)
-#    global qmax # not sure
-#    value = [(qmax - F[3]), F[2], F[4]]
-#    isterminal = [1, 1, 1]
-#    direction = [0, 0, 0]
-#    return (value, isterminal, direction)
-#end
-
-
+end
 
 ## Define the fnct function
 
 # Fabio: Talk to Tancrede about f, fp and F. biggest problem right now: f is nowhere defined. don't get it how it still works in matlab
 # Fabio: The commented line of codes are the MATLAB ORIGINALS
+dyn = zeros(8)
+
 function fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)
     # [Phi iota] = investment(f(3));
-    Phi_fnct = investment(f[3])[1]
-    iota_fnct = investment(f[3])[2]
-    Phi_iota_fnct = [Phi_fnct, iota_fnct]   # I am sure there is a better way to code this. also not sure if we can't take Phi_iota_temp...
+    Phi = investment(f[3])[1]   # changed this to Phi (used to be Phi_fnct)
+    iota = investment(f[3])[2]  # changed this to iota (used to be iota_fnct)
+    Phi_iota = [Phi, iota]   # I am sure there is a better way to code this. also not sure if we can't take Phi_iota_temp...
 
     # psi_L = eta; psi_R = min(f(3)/f(4) + eta, 1);
-    psi_L = eta 
-    psi_R = min(f[3]/f[4] + eta, 1) 
+    psi_L = eta
+    psi_R = min(f[3]/f[4] + eta, 1)
 
     for n = 1:50
-        psi = (psi_L + psi_R)/2
+        global psi = (psi_L + psi_R)/2
         amplification = 1 - f[4]/f[3]*(psi - eta)
-            
+
         # VOLATILITY COMPUTATION
-        sigma_eta_eta = sigma*(psi - eta)/amplification  # sigma_eta *times* eta
-        sigma_q = sigma_eta_eta*f[4]/f[3] 
-        sigma_theta = sigma_eta_eta*f[2]/f[1]
-        risk_premium = - sigma_theta*(sigma + sigma_q)
-            
-        household_premium = (a_ - a)/f[3] + delta - delta_ + risk_premium
-                   
+        global sigma_eta_eta = sigma*(psi - eta)/amplification  # sigma_eta times eta
+        global sigma_q = sigma_eta_eta*f[4]/f[3]
+        global sigma_theta = sigma_eta_eta*f[2]/f[1]
+        global risk_premium = - sigma_theta*(sigma + sigma_q)
+
+        global household_premium = (a_ - a)/f[3] + delta - delta_ + risk_premium
+
         if household_premium > 0 # households want to hold more
             psi_R = psi
         else
             psi_L = psi
-        end 
+        end
     end
 
     mu_q = r - (a - iota)/f[3] - Phi + delta - sigma*sigma_q + risk_premium
     mu_eta_eta = -(psi - eta)*(sigma + sigma_q)*(sigma + sigma_q + sigma_theta) + eta*(a - iota)/f[3] + eta*(1 - psi)*(delta_ - delta)
-    qpp = 2*(mu_q*f[3] - f[4]*mu_eta_eta)/sigma_eta_eta^2 
-    thetapp = 2*((rho - r)*f[1] - f[2]*mu_eta_eta)/sigma_eta_eta^2 
+    qpp = 2*(mu_q*f[3] - f[4]*mu_eta_eta)/sigma_eta_eta^2
+    thetapp = 2*((rho - r)*f[1] - f[2]*mu_eta_eta)/sigma_eta_eta^2
 
-    fp = [f[2], thetapp, f[4], qpp]
+    local fp = [f[2], thetapp, f[4], qpp]
+
+    # remember: f = [theta(eta), theta'(eta), q(eta), q'(eta)]
 
     leverage = psi/eta
     rk = r + risk_premium
@@ -80,28 +68,26 @@ function fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)
 
     dyn = [psi, sigma_eta_eta, sigma_q, mu_eta_eta, mu_q, iota, leverage, rk, r_k]
 
-    return(fp, dyn)
+    return(fp)
 
 end
 
-
-
-        ## Setting Parameters
+## Setting Parameters
 
 a = 0.11
-a_= 0.05 
+a_= 0.05
 rho = 0.06
 r = 0.05
 sigma = 0.025
-delta = 0.03 
+delta = 0.03
 delta_ = 0.08
 
-        ## Some preparation : Determine First-Best Q, and the worst Q (also q(0))
+## Some preparation : Determine First-Best Q, and the worst Q (also q(0))
 
-# Determine first-best q, q(eta_star) that is the price of capital when experts own the equilibrium share of capital        
+# Determine first-best q, q(eta_star) that is the price of capital when experts own the equilibrium share of capital
 global qmax
-QL = 0
-QR = 10 
+global QL = 0
+global QR = 10
 
 for iter = 1:50
     qmax = (QL + QR)/2
@@ -109,80 +95,116 @@ for iter = 1:50
     iota = investment(qmax)[2]
     value = (a - iota)/(r + delta - Phi)
     if iota > a # price is too large
-        QR = qmax 
+        global QR = qmax
     elseif value > qmax # price still too large
-        QL = qmax
-    elseif  r + delta < Phi 
+        global QL = qmax
+    elseif  r + delta < Phi
         println("First-best price is infinite")
-        QR = qmax 
+        global QR = qmax
     else
-        QR = qmax
+        global QR = qmax
     end
 end
 
-# Determine the worst q, q_ = q(0) that is the price of capital when experts own no capital 
+# Determine the worst q, q_ = q(0) that is the price of capital when experts own no capital
 global q_
-QL = 0 
-QR = 10 
+global QL = 0
+global QR = 10
 
-for iter = 1:50 
-    q_ = (QL + QR)/2
+for iter = 1:50
+    global q_ = (QL + QR)/2
     Phi = investment(q_)[1]
     iota = investment(q_)[2]
     value = (a_ - iota)/(r + delta_ - Phi)
     if iota > a_ # price is too large
-        QR = q_
+        global QR = q_
     elseif value < q_ # price still too large
-        QR = q_
-    else 
-        QL = q_
+        global QR = q_
+    else
+        global QL = q_
     end
 end
 
-
-        ## Main part of the code 
-
+## Main part of the code
 
 # Things to do: Look at fnct.m and see how it relates to the paper at 16 point (i)
 
 etaspan = (0.0, 1.0)
-F0 = [1, -1e+10, q_, 0]  # [theta(0), theta'(0), q(0), q'(0)]  
+F0 = [1, -1e+10, q_, 0]  # [theta(0), theta'(0), q(0), q'(0)]
 
 #options = odeset('RelTol',1e-08,'AbsTol',1e-10, 'events','evntfcn');
 
 # Defining stopping function
 
-function eventfcn(vcondition, value, eta, integrator)
-    out[1] = (qmax-F(3))    # Potential problem with qmax 
-    out[2] = F(2)
-    out[3] = F(4)
+# f = [theta(eta), theta'(eta), q(eta), q'(eta)]
+# condition (returns true or false), relates to events
+function condition(f, eta, integrator)
+    return integrator.u[3] > qmax || integrator.u[2] == 0 || integrator.u[4] == 0
 end
 
-function affect!(integrator, idx)
-    if (idx == 1 | idx == 2 | idx == 3)
-        affect!(integrator) = terminate!(integrator)
+function affect!(integrator)
+    println("terminating")
+    terminate!(integrator)
+end
+
+cb = ContinuousCallback(condition, affect!)
+
+# u p t
+odefun(f, dyn, eta) = fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)
+#dyn(f, dyn, eta) = fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)[2]
+
+sols = []
+#time = zeros(1)
+global QL = 0
+global QR = 1e+15
+for iter = 1:50
+    F0[4] = (QL + QR)/2
+    prob = ODEProblem(odefun, F0, etaspan, dyn)
+    sol = solve(prob, Tsit5(), RelTol = 1e-08, abstol = 1e-10)  # sol = solve(prob, Tsit5(), callback = cb, RelTol = 1e-08, abstol = 1e-10)
+    push!(sols, sol)
+    #global t = sol.u
+    #push!(time,t)
+    if sol.u[end][4] == 0 # if q'(eta) has reached zero, we
+        global QL = F0[4]  # increase q'(0)
+    else        # if q(eta) reached qmax or theta'(0) reached 0
+        global QR = F0[4]
     end
 end
 
-cb = VectorContinuousCallback(eventfcn,affect!,3)    
+using Plots
+#plot(sols[1])
+#plot!(sols[2])
+plot(sols[end])
+xlabel!("η")
 
-odefun(eta, f) = fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)[1]
-#dyn(eta, f) = fnct(eta, f, r, rho, a, a_, delta, delta_, sigma)[2]
+## Computing other variables
 
-QL = 0
-QR = 1e+15
-for iter = 1:50
-    F0[4] = (QL+QR)/2
-    prob = ODEProblem(odefun, F0, etaspan, dyn)
-    sol = solve(prob, Tsit5(), callback = cb, RelTol = 1e-08, abstol = 1e-10)
+#N = length(sols[end].t)
+#dynout = zeros(N, 9)
+
+#for n = 1:N
+#    fp = fnct(sols[end].t, sols[end].u, r, rho, a, a_, delta, delta_, sigma)
+#end
+
+#=
+
+% here we are basically done... let me just compute all other variables
+% from the same function fnct
+N = length(etaout);
+dynout = zeros(N, 9);
+for n = 1:N,
+    [fp dynout(n,:)] = fnct(etaout(n), fout(n,:), r, rho, a, a_, delta, delta_, sigma);
 end
 
-    
+% normalize theta, to make sure that theta(eta*) = 1
+normalization = fout(N,1);
+fout(:,1:2) = fout(:,1:2)/normalization;
 
+% plot everything
 
-#  u0 = [50.0,0.0,0.0,2.0]
-#  tspan = (0.0,15.0)
-#  p = 9.8
-#  prob = ODEProblem(f,u0,tspan,p)
-#  sol = solve(prob,Tsit5(),callback=cb,dt=1e-3,adaptive=false)
-#  plot(sol,vars=(1,3))
+figure(1);
+subplot(3,3,1); hold on
+plot(etaout, fout(:,3), color);
+xlabel('\eta')
+ylabel('q');
+=#
