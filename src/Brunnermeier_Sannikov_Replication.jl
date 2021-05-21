@@ -95,7 +95,7 @@ global qmax
 global QL = 0
 global QR = 10
 
-for iter = 1:50
+for iter = 1:50                                                            # Over the course of the 50 iterations we progressively shift QL & QR to converge towards qmax
     global qmax = (QL + QR)/2
     Phi = investment(qmax)[1]
     iota = investment(qmax)[2]
@@ -117,7 +117,7 @@ global q_
 global QL = 0
 global QR = 10
 
-for iter = 1:50
+for iter = 1:50                                                             # Over the course of the 50 iterations we progressively shift QL & QR to converge towards q_
     global q_ = (QL + QR)/2
     Phi = investment(q_)[1]
     iota = investment(q_)[2]
@@ -133,20 +133,23 @@ end
 
 ## Main part of the code
 
-etaspan = (0.0, 1.0)
+etaspan = (0.0, 1.0)                                                           # Setting up the grid 
 F0 = [1, -1e+10, q_, 0]  # [theta(0), theta'(0), q(0), q'(0)]
 
 # Defining stopping function
 
 # f = [theta(eta), theta'(eta), q(eta), q'(eta)]
-# condition (returns true or false), relates to events
+# Condition defines the boundaries that stop the intergration
 function condition(f, eta, integrator)
     integrator.u[3] > qmax || integrator.u[2] == 0 || integrator.u[4] == 0
 end
 
-function affect!(integrator)
+# affect stops the integration when the condition is fulfilled
+function affect!(integrator, idx)
     #println("terminating")
-    terminate!(integrator)
+    if (idx = 1) 
+        terminate!(integrator) 
+    end
 end
 
 cb = ContinuousCallback(condition, affect!)
@@ -159,7 +162,7 @@ sols = []
 #spreads = []
 global QL = 0
 global QR = 1e+15
-for iter = 1:50
+for iter = 1:50                                                           # Over the course of the 50 iterations QL & QR are supposed to converge towards F0(4) = q'(eta)
     #spread = QR - QL
     #push!(spreads, spread)
     F0[4] = (QL + QR)/2
