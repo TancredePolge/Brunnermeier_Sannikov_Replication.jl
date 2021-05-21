@@ -9,9 +9,9 @@ The paper “A Macroeconomic Model with a Financial Sector”, written by Markus
 
 The replication material can be found here https://www.openicpsr.org/openicpsr/project/112732/version/V1/view?path=/openicpsr/112732/fcr:versions/V1/data&type=folder. The code was written in Matlab. 3 among the 4 files set up the equations, the last file solves for the equilibrium and produces the plots. 
 
-![Graph 1](graphs/fig1.png =70)
+![Graph 1](graphs/fig1.png =70x)
 
-![Graph 2](graphs/fig2.png =70)
+![Graph 2](graphs/fig2.png =70x)
 
 
 ## What we did 
