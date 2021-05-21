@@ -7,7 +7,7 @@ The paper “A Macroeconomic Model with a Financial Sector”, written by Markus
 
 ## The original code 
 
-The replication material can be found here https://www.openicpsr.org/openicpsr/project/112732/version/V1/view?path=/openicpsr/112732/fcr:versions/V1/data&type=folder. The code was written in Matlab. 3 among the 4 files set up the equations, the last file solves for the equilibrium and produces the plots. 
+The replication material can be found here https://www.openicpsr.org/openicpsr/project/112732/version/V1/view?path=/openicpsr/112732/fcr:versions/V1/data&type=folder. The code was written in Matlab. 3 among the 4 files set up the equations, the last file solves for the equilibrium and produces the plots. Here are the graphs produced by the Matlab code. 
 
 ![Graph 1](graphs/fig1.png)
 
@@ -26,4 +26,6 @@ Our goal was to replicate the results in the programming language Julia. Precise
 
 ## Our problems 
 
-Our only problem consisted of solving for the equilibrium. Setting up all functions and plotting the result did not prove to be a huge obstacle. However, we struggled a lot with the part that solves for the equilibrium. Prior to solving for the equilibrium, we checked every line several times and we are confident in having correctly replicated all ingredients the solver needs to solve for the equilibrium. Even though the solver ultimately achieves to solve for an equilibrium, it does not correspond to the one in the paper. This can be seen by comparing our graphs to the ones of the paper. Ours depart in a systemic way from the ones presented in the paper. We tried out several things and reached out to the online community, but in the end, we were not able to replicate the results and we do not really know why. However, our replication can serve as a solid base on which future students or researchers can build on. We do believe that the problem lies somewhere in the way we formulated the conditions. It seems that the main loop that is supposed to determine the 
+Our only problem consisted of solving for the equilibrium. Setting up all functions and plotting the result did not prove to be a huge obstacle. However, we struggled a lot with the part that solves for the equilibrium. Prior to solving for the equilibrium, we checked every line several times and we are confident in having correctly replicated all ingredients the solver needs to solve for the equilibrium. Even though the solver ultimately achieves to solve for an equilibrium, it does not correspond to the one in the paper. This can be seen by comparing our graphs to the ones of the paper. Ours depart in a systemic way from the ones presented in the paper. We tried out several things and reached out to the online community, but in the end, we were not able to replicate the results and we do not really know why. However, our replication can serve as a solid base on which future students or researchers can build on. 
+
+We do believe that the problem lies somewhere in the way we formulated the callback conditions. As a result the integrations don't stop and we don't retreive the iterations where q' = 0. Finally in the last loop the lower bound never rises and (QL+QR)/2 doesn't converge to the right value of q'. 
