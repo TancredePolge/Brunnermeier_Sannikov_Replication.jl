@@ -1,4 +1,4 @@
-module Brunnermeier_Sannikov_Replication
+#module Brunnermeier_Sannikov_Replication
 
                         ##        REPLICATION CODE FOR BRUNNERMEIER & SANNIKOV (2014)       ##
 
@@ -164,7 +164,7 @@ for iter = 1:50
     #push!(spreads, spread)
     F0[4] = (QL + QR)/2
     prob = ODEProblem(odefun, F0, etaspan, parameters)
-    global sol = solve(prob, Tsit5(), callback = cb, reltol = 1e-08, abstol = 1e-10, maxiters =1e6)
+    global sol = solve(prob, Tsit5(), callback = cb, reltol = 1e-06, abstol = 1e-10, maxiters =1e6)
     push!(sols, sol)
     if sol.u[end][4] == 0 # if q'(eta) has reached zero, we
         global QL = F0[4]  # increase q'(0)
@@ -174,7 +174,7 @@ for iter = 1:50
 end
 
 # spreads measures the convergence of QL & QR
-iterations = [length(sols[i].t) for i = 1:50]  # gives the number of iterations on eta for each pair (QL:QR)
+# iterations = [length(sols[i].t) for i = 1:50]  # gives the number of iterations on eta for each pair (QL:QR)
 
 
 ## Computing other variables
@@ -212,5 +212,4 @@ expert = sol.t.*fout[:,3].*fout[:,1]
 household = (1 .- sol.t).*fout[:,3]
 plot(expert,household, xaxis = "expert utility", yaxis = "household utility")
 
-
-end #module
+#end #module
